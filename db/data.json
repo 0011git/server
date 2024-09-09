@@ -1,1 +1,14 @@
-{"list":[{"id":"86083789-cbe1-4b57-b60c-4a32ec617737","todo":"핸드폰충전","status":true},{"id":"8da7aa2f-64aa-44f3-af44-52be86e9d9ed","todo":"빨래","status":false}]}
+{
+    "list": [
+        {
+            "id": "86083789-cbe1-4b57-b60c-4a32ec617737",
+            "todo": "핸드폰충전",
+            "status": true
+        },
+        {
+            "id": "8da7aa2f-64aa-44f3-af44-52be86e9d9ed",
+            "todo": "빨래",
+            "status": false
+        }
+    ]
+}
