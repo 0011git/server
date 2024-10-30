@@ -30,7 +30,7 @@ news.get('/', async function(req, res) {
     const sectionArr = [politics, economy, society, culture, world, tech, entertainment, opinion]
     const sectionBaseUrl = `${localBaseUrl}/${sectionArr[0]}`
     const defaultParams = {
-        api_key: '2e54407962f548d698a9e69f703b0bad',
+        api_key: process.env.DEEP_SEARCH_API_KEY,
     }
     const todayParams = {        
         date_from: formattedToday,
