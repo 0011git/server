@@ -1,5 +1,7 @@
 //vue.js news(딥서치뉴스 api)용 서버
 
+
+
 //참고문서
 // https://news.deepsearch.com/api/#tag/%EA%B5%AD%EB%82%B4-%EA%B8%B0%EC%82%AC/operation/get_articles_v1_articles_get
 //api요청  
@@ -9,6 +11,7 @@
 const express = require('express')  //express import해오기
 const news = express.Router() //express router 모듈
 const axios = require('axios');
+require('dotenv').config(); // env모듈
 
 /** 날짜 형식 바꾸는 함수 */
 function dateFormat(date) {
@@ -41,7 +44,7 @@ news.get('/', async function(req, res){
     //날짜 변환
     const today = new Date();
     const formattedToday = dateFormat(today);
-    const formatted7daysAgo = dateFormat(new Date(today - 7 * 24 * 60 * 60 * 1000));
+    // const formatted7daysAgo = dateFormat(new Date(today - 7 * 24 * 60 * 60 * 1000));
     const formatted30daysAgo = dateFormat(new Date(today - 30 * 24 * 60 * 60 * 1000));
 
     //검색키워드 변환
@@ -64,8 +67,14 @@ news.get('/', async function(req, res){
     //데이터 요청 함수 fetchMain, fetchSub
     const fetchMain = async (mainUrlRequests) => {      
         const results = {
-            today: await Promise.all([...mainUrlRequests.today]),
-            section: await Promise.all([...mainUrlRequests.section])
+            local:{
+                today: await Promise.all([...mainUrlRequests.local.today]),
+                section: await Promise.all([...mainUrlRequests.local.section])
+            },
+            global:{
+                today: await Promise.all([...mainUrlRequests.global.today]),
+                section: await Promise.all([...mainUrlRequests.global.section])
+            }
         }
         return results 
     }
@@ -77,7 +86,7 @@ news.get('/', async function(req, res){
 
     //페이지별로 구분해서 요청하기
     switch(page){
-        case 'main':    // 요청 9번!
+        case 'main':    // 요청 18번!
             let todayParams = {
                 ...params,
                 date_from: formattedToday,
@@ -89,20 +98,28 @@ news.get('/', async function(req, res){
                 date_to: formattedToday
             }
 
-            let mainUrlRequests = { today:[], section:[] };
-            mainUrlRequests.today.push(axios.get(pickedBaseUrl, { params: todayParams}));
+            let mainUrlRequests = { local: { today:[], section:[] }, global:{ today:[], section:[] } };
+            mainUrlRequests.local.today.push(axios.get(localBaseUrl, { params: todayParams}));
+            mainUrlRequests.global.today.push(axios.get(globalBaseUrl, { params: todayParams}));
 
             const sectionArr =  ['politics', 'economy', 'society', 'culture', 'world', 'tech', 'entertainment', 'opinion']
             
             sectionArr.forEach((section) => {
-                mainUrlRequests.section.push(axios.get(`${pickedBaseUrl}/${section}`, { params: sectionParams}))
+                mainUrlRequests.local.section.push(axios.get(`${localBaseUrl}/${section}`, { params: sectionParams}))
+                mainUrlRequests.global.section.push(axios.get(`${globalBaseUrl}/${section}`, { params: sectionParams}))
             })
 
             const results = await fetchMain(mainUrlRequests)
 
             res.json({
-                today: results.today.map(response => response.data),
-                section: results.section.map((response, index) => ({ [sectionArr[index]]: response.data }))
+                local:{
+                    today: results.local.today.map(response => response.data),
+                    section: results.local.section.map((response, index) => ({ [sectionArr[index]]: response.data }))
+                },
+                global: {
+                    today: results.global.today.map(response => response.data),
+                    section: results.global.section.map((response, index) => ({ [sectionArr[index]]: response.data }))
+                }
             });
 
             break;
@@ -111,7 +128,7 @@ news.get('/', async function(req, res){
             pickedBaseUrl += `/${section}`;
             params = {
                 ...params, 
-                date_from: formatted7daysAgo,
+                date_from: formatted30daysAgo,
                 date_to: formattedToday
             }
             res.json( await fetchSub(pickedBaseUrl, params) )
