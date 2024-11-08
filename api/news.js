@@ -1,12 +1,11 @@
 //vue.js news(딥서치뉴스 api)용 서버
 
-
-
 //참고문서
 // https://news.deepsearch.com/api/#tag/%EA%B5%AD%EB%82%B4-%EA%B8%B0%EC%82%AC/operation/get_articles_v1_articles_get
+
 //api요청  
 // 'https://api-v2.deepsearch.com/v1/articles?date_from=2024-10-23&date_to=2024-10-24&api_key=2e54407962f548d698a9e69f703b0bad'
-//검색에는 날짜 필요x, 키워드랑 api키만 있어도 됨.
+//  검색에는 날짜 필요x, 키워드랑 api키만 있어도 됨.
 
 const express = require('express')  //express import해오기
 const news = express.Router() //express router 모듈
@@ -64,62 +63,59 @@ news.get('/', async function(req, res){
     }
 
 
-    //데이터 요청 함수 fetchMain, fetchSub
+    //데이터 요청 함수 : fetchMain, fetchSub
     const fetchMain = async (mainUrlRequests) => {      
         const results = {
-            local:{
-                today: await Promise.all([...mainUrlRequests.local.today]),
-                section: await Promise.all([...mainUrlRequests.local.section])
-            },
-            global:{
-                today: await Promise.all([...mainUrlRequests.global.today]),
-                section: await Promise.all([...mainUrlRequests.global.section])
-            }
+            today: await Promise.all([...mainUrlRequests.today]),
+            section: await Promise.all([...mainUrlRequests.section])
+
+            //국내+해외
+            // local:{
+                // today: await Promise.all([...mainUrlRequests.local.today]),
+                // section: await Promise.all([...mainUrlRequests.local.section])
+            // },
+            // global:{
+            //     today: await Promise.all([...mainUrlRequests.global.today]),
+            //     section: await Promise.all([...mainUrlRequests.global.section])
+            // }
         }
         return results 
     }
+
     const fetchSub = async (pickedBaseUrl, params) => {
         //요청
         const resNews = await axios.get(pickedBaseUrl, {params});
         return resNews.data;
     }
 
-    //페이지별로 구분해서 요청하기
+    // [↓] 실행 ----------------------------------------
+    //페이지 별로 구분해서 요청하기
     switch(page){
-        case 'main':    // 요청 18번!
-            let todayParams = {
+        case 'main':    // 요청 9번!  (원래는 국내해외 둘다 해서 18번 넣었는데 월 횟수제한이 300회라 선택한 것 하나만 하기로 함)
+            params = {
                 ...params,
+                page_size: 14,
                 date_from: formattedToday,
                 date_to: formattedToday
             }
-            let sectionParams = {
-                ...params,
-                date_from: formatted30daysAgo,
-                date_to: formattedToday
-            }
 
-            let mainUrlRequests = { local: { today:[], section:[] }, global:{ today:[], section:[] } };
-            mainUrlRequests.local.today.push(axios.get(localBaseUrl, { params: todayParams}));
-            mainUrlRequests.global.today.push(axios.get(globalBaseUrl, { params: todayParams}));
-
-            const sectionArr =  ['politics', 'economy', 'society', 'culture', 'world', 'tech', 'entertainment', 'opinion']
+            //받아올 데이터 기본 형태
+            let mainUrlRequests = 
+            { 
+                today, 
+                section
+            };
+            // 1. 오늘의 뉴스
+            mainUrlRequests.today.push(axios.get(pickedBaseUrl, { params: params}));
             
-            sectionArr.forEach((section) => {
-                mainUrlRequests.local.section.push(axios.get(`${localBaseUrl}/${section}`, { params: sectionParams}))
-                mainUrlRequests.global.section.push(axios.get(`${globalBaseUrl}/${section}`, { params: sectionParams}))
-            })
+            // 2. 섹션별(기본:politics)
+            mainUrlRequests.section.push(axios.get(`${pickedBaseUrl}/politics`, { params: params}))
 
             const results = await fetchMain(mainUrlRequests)
 
             res.json({
-                local:{
-                    today: results.local.today.map(response => response.data),
-                    section: results.local.section.map((response, index) => ({ [sectionArr[index]]: response.data }))
-                },
-                global: {
-                    today: results.global.today.map(response => response.data),
-                    section: results.global.section.map((response, index) => ({ [sectionArr[index]]: response.data }))
-                }
+                today: results.today.map(response => response.data),
+                section: results.section.map((response, index) => response.data)
             });
 
             break;
@@ -128,7 +124,7 @@ news.get('/', async function(req, res){
             pickedBaseUrl += `/${section}`;
             params = {
                 ...params, 
-                date_from: formatted30daysAgo,
+                date_from: formattedToday,
                 date_to: formattedToday
             }
             res.json( await fetchSub(pickedBaseUrl, params) )
