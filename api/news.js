@@ -31,6 +31,7 @@ news.get('/', async function(req, res){
     const page = req.query.page;    //main, section, search
     const section = req.query.section;      //politics, economy, ...
     const keyword = req.query.keyword;      //인공 지능 특이점
+    const pageNum = req.query.pageNum;
 
     const localBaseUrl = 'https://api-v2.deepsearch.com/v1/articles'
     const globalBaseUrl = 'https://api-v2.deepsearch.com/v1/global-articles'
@@ -38,6 +39,7 @@ news.get('/', async function(req, res){
     let pickedBaseUrl = '';
     let params = {
         api_key: process.env.DEEP_SEARCH_API_KEY,
+        page: 1
     }
 
     //날짜 변환
@@ -125,7 +127,8 @@ news.get('/', async function(req, res){
             params = {
                 ...params, 
                 date_from: formattedToday,
-                date_to: formattedToday
+                date_to: formattedToday,
+                page: pageNum
             }
             res.json( await fetchSub(pickedBaseUrl, params) )
             break;
@@ -133,7 +136,8 @@ news.get('/', async function(req, res){
         case 'search':
             params = {
                 ...params,
-                keyword: formattedKeyword
+                keyword: formattedKeyword,
+                page: pageNum
             }
             res.json( await fetchSub(pickedBaseUrl, params) )
             break;
