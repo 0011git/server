@@ -93,10 +93,10 @@ news.get('/', async function(req, res){
     // [↓] 실행 ----------------------------------------
     //페이지 별로 구분해서 요청하기
     switch(page){
-        case 'main':    // 요청 9번!  (원래는 국내해외 둘다 해서 18번 넣었는데 월 횟수제한이 300회라 선택한 것 하나만 하기로 함)
+        case 'main':    // 요청 2번!  (원래는 국내해외 둘다 해서 18번 넣었는데 월 횟수제한이 300회라 최소한만 하기로 함)
             params = {
                 ...params,
-                page_size: 14,
+                page_size: 14,  //4개(방금업데이트된)+10개(오늘의)
                 date_from: formattedToday,
                 date_to: formattedToday
             }
@@ -107,17 +107,17 @@ news.get('/', async function(req, res){
                 today, 
                 section
             };
-            // 1. 오늘의 뉴스
-            mainUrlRequests.today.push(axios.get(pickedBaseUrl, { params: params}));
+            // 1. 방금업데이트된+오늘의 뉴스
+            mainUrlRequests.today.push(axios.get(pickedBaseUrl, {params: params}) );
             
-            // 2. 섹션별(기본:politics)
-            mainUrlRequests.section.push(axios.get(`${pickedBaseUrl}/politics`, { params: params}))
+            // 2. 섹션별(기본 politics)
+            mainUrlRequests.section.push(axios.get(`${pickedBaseUrl}/politics`, {params: params}) )
 
             const results = await fetchMain(mainUrlRequests)
 
             res.json({
                 today: results.today.map(response => response.data),
-                section: results.section.map((response, index) => response.data)
+                section: results.section.map(response => response.data)
             });
 
             break;
