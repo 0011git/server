@@ -27,12 +27,11 @@ function keywordFormat(raw) {
 
 
 news.get('/', async function(req, res){
-    const world = req.query.world;  //local or global
-    const page = req.query.page;    //main, section, search
-    const section = req.query.section;      //politics, economy, ...
-    const keyword = req.query.keyword;      //인공 지능 특이점
-    const pageNum = req.query.pageNum;
-
+    const world = req.query.world;       // <필수> local or global
+    const page = req.query.page;         // <필수> main, section, search
+    const section = req.query.section;   // politics, economy, ...
+    const keyword = req.query.keyword;   // 검색에 필요, ex 인공 지능 특이점
+    const pageNum = req.query.pageNum;   // 섹션, 검색에 필요
     const localBaseUrl = 'https://api-v2.deepsearch.com/v1/articles'
     const globalBaseUrl = 'https://api-v2.deepsearch.com/v1/global-articles'
 
@@ -42,13 +41,13 @@ news.get('/', async function(req, res){
         page: 1
     }
 
-    //날짜 변환
+    //날짜 형식 변환
     const today = new Date();
     const formattedToday = dateFormat(today);
     // const formatted7daysAgo = dateFormat(new Date(today - 7 * 24 * 60 * 60 * 1000));
     const formatted30daysAgo = dateFormat(new Date(today - 30 * 24 * 60 * 60 * 1000));
 
-    //검색키워드 변환
+    //검색 키워드 변환
     const formattedKeyword = section ? keywordFormat(keyword) : ''
 
     //국내 or 해외
@@ -59,31 +58,22 @@ news.get('/', async function(req, res){
         case 'global':
             pickedBaseUrl = globalBaseUrl
             break;
-        default:    //국내
+        default:    //디폴트=국내
             pickedBaseUrl = localBaseUrl
             break;
     }
 
-
-    //데이터 요청 함수 : fetchMain, fetchSub
+    //데이터 요청 함수 : fetchMain(메인), fetchSub(섹션, 검색)
+    // 메인
     const fetchMain = async (mainUrlRequests) => {      
         const results = {
             today: await Promise.all([...mainUrlRequests.today]),
             section: await Promise.all([...mainUrlRequests.section])
-
-            //국내+해외
-            // local:{
-                // today: await Promise.all([...mainUrlRequests.local.today]),
-                // section: await Promise.all([...mainUrlRequests.local.section])
-            // },
-            // global:{
-            //     today: await Promise.all([...mainUrlRequests.global.today]),
-            //     section: await Promise.all([...mainUrlRequests.global.section])
-            // }
         }
         return results 
     }
 
+    // 서브
     const fetchSub = async (pickedBaseUrl, params) => {
         //요청
         const resNews = await axios.get(pickedBaseUrl, {params});
@@ -102,12 +92,11 @@ news.get('/', async function(req, res){
             }
 
             //받아올 데이터 기본 형태
-            let mainUrlRequests = 
-            { 
+            let mainUrlRequests = { 
                 today, 
                 section
             };
-            // 1. 방금업데이트된+오늘의 뉴스
+            // 1. 방금 업데이트된+오늘의 뉴스
             mainUrlRequests.today.push(axios.get(pickedBaseUrl, {params: params}) );
             
             // 2. 섹션별(기본 politics)
